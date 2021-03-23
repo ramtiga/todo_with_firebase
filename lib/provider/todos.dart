@@ -6,14 +6,42 @@ class TodosProvider extends ChangeNotifier {
     Todo(
         title: 'TOEIC勉強',
         description: '''英単語100
-      英熟語復習''',
+- 英熟語復習''',
         createdTime: DateTime.now()),
     Todo(
         title: '買い物',
         description: '''バナナ
-      牛乳
-      パン
-      たまご''',
+- 牛乳
+- パン
+- たまご''',
+        createdTime: DateTime.now()),
+    Todo(
+        title: '買い物',
+        description: '''バナナ
+- 牛乳
+- パン
+- たまご''',
+        createdTime: DateTime.now()),
+    Todo(
+        title: '買い物',
+        description: '''バナナ
+- 牛乳
+- パン
+- たまご''',
+        createdTime: DateTime.now()),
+    Todo(
+        title: '買い物',
+        description: '''バナナ
+- 牛乳
+- パン
+- たまご''',
+        createdTime: DateTime.now()),
+    Todo(
+        title: '買い物',
+        description: '''バナナ
+- 牛乳
+- パン
+- たまご''',
         createdTime: DateTime.now()),
   ];
 
