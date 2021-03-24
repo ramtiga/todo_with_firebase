@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:todo_with_firebase/add_todo.dart';
 import 'package:todo_with_firebase/provider/todos.dart';
+import 'package:todo_with_firebase/utils.dart';
+
+import 'model/todo.dart';
 
 final selectTabProvider = StateProvider<int>((ref) => 0);
 final todoProvider = ChangeNotifierProvider((ref) => TodosProvider());
@@ -28,72 +32,10 @@ class MyHomePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, watch) {
     final provider = watch(todoProvider);
-    final todos = provider.todos;
 
     final tabs = [
-      ListView.separated(
-        physics: BouncingScrollPhysics(),
-        padding: EdgeInsets.all(16),
-        separatorBuilder: (context, index) => Container(height: 8),
-        itemCount: todos.length,
-        itemBuilder: (context, index) {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(16),
-            child: Slidable(
-              actionPane: SlidableDrawerActionPane(),
-              key: Key(todos[index].id),
-              actions: [
-                IconSlideAction(
-                  color: Colors.green,
-                  onTap: () {},
-                  caption: 'Edit',
-                  icon: Icons.edit,
-                )
-              ],
-              secondaryActions: [
-                IconSlideAction(
-                  color: Colors.red,
-                  onTap: () {},
-                  caption: 'Delete',
-                  icon: Icons.delete,
-                )
-              ],
-              child: Container(
-                color: Colors.white,
-                padding: EdgeInsets.all(10),
-                child: Row(
-                  children: [
-                    Checkbox(
-                        activeColor: Theme.of(context).primaryColor,
-                        checkColor: Colors.indigo,
-                        value: todos[index].isDone,
-                        onChanged: null),
-                    SizedBox(width: 8),
-                    Expanded(
-                        child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          todos[index].title,
-                          style: TextStyle(
-                              fontSize: 21,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).primaryColor),
-                        ),
-                        Text(
-                          todos[index].description,
-                          style: TextStyle(fontSize: 18, height: 1.5),
-                        ),
-                      ],
-                    )),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-      Container(),
+      buildTodoListWidget(provider),
+      buildTodoCompleteListWidget(provider),
     ];
     final selectedIndex = watch(selectTabProvider);
 
@@ -106,7 +48,9 @@ class MyHomePage extends ConsumerWidget {
         unselectedItemColor: Colors.white.withOpacity(0.7),
         selectedItemColor: Colors.white,
         currentIndex: selectedIndex.state,
-        onTap: (value) => selectedIndex.state = value,
+        onTap: (value) {
+          selectedIndex.state = value;
+        },
         items: [
           BottomNavigationBarItem(
               icon: Icon(Icons.fact_check_outlined), label: 'Todos'),
@@ -114,7 +58,7 @@ class MyHomePage extends ConsumerWidget {
               icon: Icon(Icons.done_outline_outlined), label: 'Completed'),
         ],
       ),
-      body: tabs[0],
+      body: tabs[selectedIndex.state],
       floatingActionButton: FloatingActionButton(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -127,101 +71,151 @@ class MyHomePage extends ConsumerWidget {
           child: Icon(Icons.add)),
     );
   }
-}
 
-class AddTodoDialogWidget extends ConsumerWidget {
-  final _formKey = GlobalKey<FormState>();
-  final title = TextEditingController();
-  final description = TextEditingController();
+  Widget buildTodoListWidget(provider) {
+    final todos = provider.todos;
 
-  @override
-  Widget build(BuildContext context,
-          T Function<T>(ProviderBase<Object, T> provider) watch) =>
-      AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Text(
-                  "Add Todo",
-                  style: TextStyle(fontSize: 21.0, fontWeight: FontWeight.bold),
-                ),
-                Spacer(),
-                IconButton(
-                    icon: Icon(Icons.cancel, color: Colors.grey, size: 30.0),
-                    onPressed: () => Navigator.pop(context)),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: title,
-                      maxLines: 1,
-                      decoration: InputDecoration(
-                        border: UnderlineInputBorder(),
-                        labelText: 'Title',
+    return ListView.separated(
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.all(16),
+      separatorBuilder: (context, index) => Container(height: 8),
+      itemCount: todos.length,
+      itemBuilder: (context, index) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Slidable(
+            actionPane: SlidableDrawerActionPane(),
+            key: Key(todos[index].id),
+            actions: [
+              IconSlideAction(
+                color: Colors.green,
+                onTap: () {},
+                caption: 'Edit',
+                icon: Icons.edit,
+              )
+            ],
+            secondaryActions: [
+              IconSlideAction(
+                color: Colors.red,
+                onTap: () => deleteTodo(context, todos[index], provider),
+                caption: 'Delete',
+                icon: Icons.delete,
+              )
+            ],
+            child: Container(
+              color: Colors.white,
+              padding: EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  Checkbox(
+                      activeColor: Theme.of(context).primaryColor,
+                      checkColor: Colors.indigo,
+                      value: todos[index].isDone,
+                      onChanged: (_) {
+                        bool isDone = provider.toggleTodoStatus(todos[index]);
+                        Utils.showSnackBar(context,
+                            isDone ? 'todo completed' : 'todo imcompleted');
+                      }),
+                  SizedBox(width: 8),
+                  Expanded(
+                      child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        todos[index].title,
+                        style: TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).primaryColor),
                       ),
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return 'Please enter a title';
-                        } else {
-                          return null;
-                        }
-                      },
-                    ),
-                    TextFormField(
-                      controller: description,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        border: UnderlineInputBorder(),
-                        labelText: 'Description',
+                      Text(
+                        todos[index].description,
+                        style: TextStyle(fontSize: 18, height: 1.5),
                       ),
-                    ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                          style: ButtonStyle(
-                              backgroundColor:
-                                  MaterialStateProperty.all(Colors.indigo)),
-                          onPressed: () {
-                            if (!_formKey.currentState.validate()) {
-                              return;
-                            }
-                            //todos.addTodo(todo);
-                            Navigator.of(context).pop();
-                          },
-                          child: Text('Save',
-                              style: TextStyle(color: Colors.white))),
-                    ),
-                  ],
-                ),
+                    ],
+                  )),
+                ],
               ),
             ),
-            //onChangedTitle: (title) => this.title = title,
-            //onChangedDescription: (description) =>
-            //this.description = description,
-            //  onSavedTodo: () {
-            //final todo = Todo(
-            //  title: title.text,
-            //  description: description.text,
-            //  createdTime: DateTime.now(),
-            //  id: DateTime.now().toString(),
-            //final todos = watch(todoProvider);
-            //todos.addTodo(todo);
-            //Navigator.of(context).pop();
-          ],
-        ),
-      );
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildTodoCompleteListWidget(provider) {
+    final todos = provider.todosCompleted;
+
+    return ListView.separated(
+      physics: BouncingScrollPhysics(),
+      padding: EdgeInsets.all(16),
+      separatorBuilder: (context, index) => Container(height: 8),
+      itemCount: todos.length,
+      itemBuilder: (context, index) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Slidable(
+            actionPane: SlidableDrawerActionPane(),
+            key: Key(todos[index].id),
+            actions: [
+              IconSlideAction(
+                color: Colors.green,
+                onTap: () {},
+                caption: 'Edit',
+                icon: Icons.edit,
+              )
+            ],
+            secondaryActions: [
+              IconSlideAction(
+                color: Colors.red,
+                onTap: () => deleteTodo(context, todos[index], provider),
+                caption: 'Delete',
+                icon: Icons.delete,
+              )
+            ],
+            child: Container(
+              color: Colors.white,
+              padding: EdgeInsets.all(10),
+              child: Row(
+                children: [
+                  Checkbox(
+                      activeColor: Theme.of(context).primaryColor,
+                      checkColor: Colors.white,
+                      value: todos[index].isDone,
+                      onChanged: (_) {
+                        bool isDone = provider.toggleTodoStatus(todos[index]);
+                        Utils.showSnackBar(context,
+                            isDone ? 'todo completed' : 'todo imcompleted');
+                      }),
+                  SizedBox(width: 8),
+                  Expanded(
+                      child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        todos[index].title,
+                        style: TextStyle(
+                            fontSize: 21,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(context).primaryColor),
+                      ),
+                      Text(
+                        todos[index].description,
+                        style: TextStyle(fontSize: 18, height: 1.5),
+                      ),
+                    ],
+                  )),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void deleteTodo(BuildContext context, Todo todo, provider) {
+    provider.removeTodo(todo);
+    Utils.showSnackBar(context, 'Delete the todo');
+  }
 }
