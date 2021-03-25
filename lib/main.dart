@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:todo_with_firebase/add_todo.dart';
 import 'package:todo_with_firebase/provider/todos.dart';
+import 'package:todo_with_firebase/todo_edit_widget.dart';
 import 'package:todo_with_firebase/utils.dart';
 
 import 'model/todo.dart';
@@ -89,7 +90,7 @@ class MyHomePage extends ConsumerWidget {
             actions: [
               IconSlideAction(
                 color: Colors.green,
-                onTap: () {},
+                onTap: () => editTodo(context, todos[index]),
                 caption: 'Edit',
                 icon: Icons.edit,
               )
@@ -102,39 +103,42 @@ class MyHomePage extends ConsumerWidget {
                 icon: Icons.delete,
               )
             ],
-            child: Container(
-              color: Colors.white,
-              padding: EdgeInsets.all(10),
-              child: Row(
-                children: [
-                  Checkbox(
-                      activeColor: Theme.of(context).primaryColor,
-                      checkColor: Colors.indigo,
-                      value: todos[index].isDone,
-                      onChanged: (_) {
-                        bool isDone = provider.toggleTodoStatus(todos[index]);
-                        Utils.showSnackBar(context,
-                            isDone ? 'todo completed' : 'todo imcompleted');
-                      }),
-                  SizedBox(width: 8),
-                  Expanded(
-                      child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        todos[index].title,
-                        style: TextStyle(
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).primaryColor),
-                      ),
-                      Text(
-                        todos[index].description,
-                        style: TextStyle(fontSize: 18, height: 1.5),
-                      ),
-                    ],
-                  )),
-                ],
+            child: GestureDetector(
+              onTap: () => editTodo(context, todos[index]),
+              child: Container(
+                color: Colors.white,
+                padding: EdgeInsets.all(10),
+                child: Row(
+                  children: [
+                    Checkbox(
+                        activeColor: Theme.of(context).primaryColor,
+                        checkColor: Colors.indigo,
+                        value: todos[index].isDone,
+                        onChanged: (_) {
+                          bool isDone = provider.toggleTodoStatus(todos[index]);
+                          Utils.showSnackBar(context,
+                              isDone ? 'todo completed' : 'todo imcompleted');
+                        }),
+                    SizedBox(width: 8),
+                    Expanded(
+                        child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          todos[index].title,
+                          style: TextStyle(
+                              fontSize: 21,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).primaryColor),
+                        ),
+                        Text(
+                          todos[index].description,
+                          style: TextStyle(fontSize: 18, height: 1.5),
+                        ),
+                      ],
+                    )),
+                  ],
+                ),
               ),
             ),
           ),
@@ -160,7 +164,9 @@ class MyHomePage extends ConsumerWidget {
             actions: [
               IconSlideAction(
                 color: Colors.green,
-                onTap: () {},
+                onTap: () {
+                  editTodo(context, todos[index]);
+                },
                 caption: 'Edit',
                 icon: Icons.edit,
               )
@@ -217,5 +223,10 @@ class MyHomePage extends ConsumerWidget {
   void deleteTodo(BuildContext context, Todo todo, provider) {
     provider.removeTodo(todo);
     Utils.showSnackBar(context, 'Delete the todo');
+  }
+
+  void editTodo(BuildContext context, Todo todo) {
+    Navigator.of(context).push(
+        MaterialPageRoute(builder: (context) => EditTodoPage(todo: todo)));
   }
 }
